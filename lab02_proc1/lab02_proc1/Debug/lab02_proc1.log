@@ -1,0 +1,3 @@
+﻿  lab02_proc1.cpp
+D:\study\system_programming\lab02_proc1\lab02_proc1\lab02_proc1.cpp(320,21): warning C4244:  'initializing': conversion from '__int64' to 'DWORD', possible loss of data
+  lab02_proc1.vcxproj -> D:\study\system_programming\lab02_controller\Debug\lab02_proc1.exe
