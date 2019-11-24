@@ -1,0 +1,5 @@
+﻿  lab03.cpp
+d:\study\system_programming\lab03\lab03\lab03.cpp(232): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\study\system_programming\lab03\lab03\lab03.cpp(235): warning C4244: 'argument': conversion from 'double' to 'int', possible loss of data
+d:\study\system_programming\lab03\lab03\lab03.cpp(328): warning C4244: 'argument': conversion from 'INT64' to 'LONG', possible loss of data
+  lab03.vcxproj -> D:\study\system_programming\lab03\Debug\lab03.exe
