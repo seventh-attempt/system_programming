@@ -1,3 +1,1 @@
-﻿  MainApp.cpp
-d:\study\system_programming\mainapp\mainapp\mainapp.cpp(153): warning C4172: returning address of local variable or temporary: value
-  MainApp.vcxproj -> D:\study\system_programming\MainApp\Debug\MainApp.exe
+﻿

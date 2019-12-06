@@ -3,35 +3,17 @@
 
 #include "stdafx.h"
 #include "MainApp.h"
-#include "accctrl.h"
 #include "aclapi.h"
+#include <commdlg.h>
 
 #include "..\\DllApp\\DllApp.h"
-#pragma comment(lib, "..\\Debug\\DllApp.lib")
-
-
-#ifndef UNICODE
-#define UNICODE
-#endif
-#pragma comment(lib, "netapi32.lib")
-
-#include <stdio.h>
-#include <assert.h>
-#include <windows.h> 
-#include <lm.h>
-
-
-//#include "windows.h"
-//#pragma comment(lib, "advapi32.lib")
-//#include "string"
-//#include "D:\\study\\system_programming\\Project1\\Project1\\Project1.h"
-//#pragma comment(lib, "D:\\study\\system_programming\\Project1\\Debug\\Project1.dll")
+#pragma comment(lib, "..\\x64\\Debug\\DllApp.lib")
 
 using namespace std;
 
 #define MAX_LOADSTRING 100
-#define ID_DENY_BUTTON 1101
-#define ID_TRUSTEE_BUTTON 1102
+#define ID_RUN_BTN 1101
+#define ID_ABOUT_BTN 1102
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -43,9 +25,13 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	Help(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	Attributor(HWND, UINT, WPARAM, LPARAM);
 
-char *GetMachineGuid();
-void Cleanup(PSID pSIDAdmin, PSID pSIDEveryone, PSECURITY_DESCRIPTOR pSD, PACL pNewDACL);
+HWND hWnd;
+HBITMAP hImage;
+
+void Cleanup(PSID pSIDEveryone, PSECURITY_DESCRIPTOR pSD, PACL pNewDACL);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -126,14 +112,38 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
-   DWORD button_style = WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON;
+   DWORD btnStyle = WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON;
+   DWORD txtStyle = WS_CHILD | WS_VISIBLE;
 
-   HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+   int wndWidth = 400;
+   int wndHeight = 500;
+   int btnWidth = 100;
+   int btnHeight = 30;
 
-   HWND deny_button = CreateWindow(L"button", L"Deny all", button_style, 50, 50, 100, 25, hWnd, (HMENU)ID_DENY_BUTTON, hInstance, NULL);
-   HWND view_trustee = CreateWindow(L"button", L"View trustee", button_style, 175, 50, 100, 25, hWnd, (HMENU)ID_TRUSTEE_BUTTON, hInstance, NULL);
-   
+   hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+      500, 100, wndWidth, wndHeight, nullptr, nullptr, hInstance, nullptr);
+
+
+   HWND bgsStatic = CreateWindow(L"STATIC", NULL, txtStyle,
+	   0, 0, wndWidth, wndHeight, hWnd, NULL, hInstance, NULL);
+
+   /*HANDLE hImage = LoadImage(NULL, L"D:\\study\\system_programming\\MainApp\\files\\lock.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+   SendMessage(hWnd, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hImage);*/
+
+   hImage = (HBITMAP)LoadImage(NULL, L"D:\\study\\system_programming\\MainApp\\files\\lock.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_LOADTRANSPARENT);
+
+   HWND madeByStatic = CreateWindow(L"STATIC", L"Made by", txtStyle,
+	   220, 280, 100, 20, hWnd, NULL, hInstance, NULL);
+   HWND nameStatic = CreateWindow(L"STATIC", L"Khramkov Dmitry", txtStyle,
+	   250, 300, 150, 20, hWnd, NULL, hInstance, NULL);
+   HWND groupStatic = CreateWindow(L"STATIC", L"gr. 10702217", txtStyle,
+	   250, 320, 150, 20, hWnd, NULL, hInstance, NULL);
+
+   HWND startBtn = CreateWindow(L"button", L"Run", btnStyle, wndWidth-btnWidth-40, wndHeight-btnHeight-80, btnWidth, btnHeight,
+	   hWnd, (HMENU)ID_RUN_BTN, hInstance, NULL);
+   HWND aboutBtn = CreateWindow(L"Button", L"About", btnStyle, 25, wndHeight-btnHeight-80, btnWidth, btnHeight,
+	   hWnd, (HMENU)ID_ABOUT_BTN, hInstance, NULL);
+
    if (!hWnd)
    {
       return FALSE;
@@ -145,112 +155,28 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-char *GetMachineGuid() {
-	char value[255];
-	DWORD BufferSize = sizeof(value);
-	LONG res = RegGetValueA(HKEY_LOCAL_MACHINE, "SOFTWARE\\Microsoft\\Cryptography", "MachineGuid", RRF_RT_REG_SZ, NULL, value, &BufferSize);
-
-	return value;
-}
-
-void Cleanup(PSID pSIDAdmin, PSID pSIDEveryone, PSECURITY_DESCRIPTOR pSD, PACL pNewDACL)
-{
-	if (pSIDAdmin)
-		FreeSid(pSIDAdmin);
-	if (pSIDEveryone)
+//
+// FUNCTION: Cleanup(PSID, PSECURITY_DESCRIPTOR, PACL)
+//
+// PURPOSE: Free all dynamic resources
+//
+//
+void Cleanup(PSID pSIDEveryone, PSECURITY_DESCRIPTOR pSD, PACL pNewDACL) {
+	if (pSIDEveryone) {
 		FreeSid(pSIDEveryone);
-	if (pSD)
-		LocalFree((HLOCAL)pSD);
-	if (pNewDACL)
-		LocalFree((HLOCAL)pNewDACL);
-}
-
-int wmain()
-{
-	LPLOCALGROUP_USERS_INFO_0 pBuf = NULL;
-	DWORD dwLevel = 0;
-	DWORD dwFlags = LG_INCLUDE_INDIRECT;
-	DWORD dwPrefMaxLen = MAX_PREFERRED_LENGTH;
-	DWORD dwEntriesRead = 0;
-	DWORD dwTotalEntries = 0;
-	NET_API_STATUS nStatus;
-
-	WCHAR _buf[255];
-	DWORD A = sizeof(_buf);
-	GetUserName(_buf, &A);
-	MessageBox(NULL, NULL, NULL, MB_OK);
-
-	//
-	// Call the NetUserGetLocalGroups function 
-	//  specifying information level 0.
-	//
-	//  The LG_INCLUDE_INDIRECT flag specifies that the 
-	//   function should also return the names of the local 
-	//   groups in which the user is indirectly a member.
-	//
-	nStatus = NetUserGetLocalGroups(
-		NULL,
-		NULL,
-		dwLevel,
-		dwFlags,
-		(LPBYTE *)&pBuf,
-		dwPrefMaxLen,
-		&dwEntriesRead,
-		&dwTotalEntries);
-	//
-	// If the call succeeds,
-	//
-	if (nStatus == NERR_Success)
-	{
-		LPLOCALGROUP_USERS_INFO_0 pTmpBuf;
-		DWORD i;
-		DWORD dwTotalCount = 0;
-
-		if ((pTmpBuf = pBuf) != NULL)
-		{
-			fprintf(stderr, "\nLocal group(s):\n");
-			//
-			// Loop through the entries and 
-			//  print the names of the local groups 
-			//  to which the user belongs. 
-			//
-			for (i = 0; i < dwEntriesRead; i++)
-			{
-				assert(pTmpBuf != NULL);
-
-				if (pTmpBuf == NULL)
-				{
-					fprintf(stderr, "An access violation has occurred\n");
-					break;
-				}
-
-				wprintf(L"\t-- %s\n", pTmpBuf->lgrui0_name);
-
-				pTmpBuf++;
-				dwTotalCount++;
-			}
-		}
-		//
-		// If all available entries were
-		//  not enumerated, print the number actually 
-		//  enumerated and the total number available.
-		//
-		if (dwEntriesRead < dwTotalEntries)
-			fprintf(stderr, "\nTotal entries: %d", dwTotalEntries);
-		//
-		// Otherwise, just print the total.
-		//
-		printf("\nEntries enumerated: %d\n", dwTotalCount);
 	}
-	else
-		fprintf(stderr, "A system error has occurred: %d\n", nStatus);
-	//
-	// Free the allocated memory.
-	//
-	if (pBuf != NULL)
-		NetApiBufferFree(pBuf);
-
-	return 0;
+	if (pSD) {
+		LocalFree((HLOCAL)pSD);
+	}
+	if (pNewDACL) {
+		LocalFree((HLOCAL)pNewDACL);
+	}
+	//if (filename) {
+	//	delete[] filename;
+	//}
+	//if (file_access_choice) {
+	//	delete[] file_access_choice;
+	//}
 }
 
 //
@@ -267,147 +193,32 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
+	// Here we checking if the application is runned at specific machine by its GUID
 	case WM_CREATE: {
-//		int d = wmain();
-		int c = SimpleSum(2, 5);
+		char *machineGUID = GetMachineGuid();
+
+		if (strcmp(machineGUID, "7fef1237-4ade-41c0-bf14-cf5b1d4bfad8") != 0) {
+			MessageBox(hWnd, L"This software doesn't belong to you", L"Error", MB_OK);
+			return -1;
+		}
+
 		break;
 	}
 	case WM_COMMAND: {
-		// Name of object, here we will add ACE for a file
-		// the file is already created
-		LPCTSTR pszObjName = L"D:\\study\\system_programming\\MainApp\\files\\4gb_patch.exe";
-		// use openfile!!!
-
-		// Result
-		DWORD dwRes = 0;
-
-		// Existing and new DACL pointers...
-		PACL pDACL = NULL;
-
-		// EXPLICIT_ACCESS structure.  For more than one entries,
-		// declare an array of the EXPLICIT_ACCESS structure
-		const int EAS = 2;
-		EXPLICIT_ACCESS ea[EAS];
-
-		// Reserving memory for security ID's
-		PSID pSIDAdmin = NULL;
-		PSID pSIDEveryone = NULL;
-
-		// Security descriptor
-		PSECURITY_DESCRIPTOR pSD = NULL;
-		SecureZeroMemory(&pSD, sizeof(PSECURITY_DESCRIPTOR));
 
 		int wmId = LOWORD(wParam);
 		// Parse the menu selections:
 		switch (wmId)
 		{
-		case ID_DENY_BUTTON: {
-			SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
-			SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
-
-			// Specify the DACL to use
-			// Create a SID for the Everyone group
-			if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
-				0, 0, 0, 0, 0, 0, 0, &pSIDEveryone)) {
-				MessageBox(hWnd, (LPCWSTR)GetLastError(), L"AllocateAndInitializeSid (Everyone) error", MB_OK);
-				Cleanup(pSIDAdmin, pSIDEveryone, pSD, pDACL);
-				return -1;
-			}
-			// Create a SID for the BUILTIN\Administrators group
-			if (!AllocateAndInitializeSid(&SIDAuthNT, 2, SECURITY_BUILTIN_DOMAIN_RID,
-				DOMAIN_ALIAS_RID_ADMINS, 0, 0, 0, 0, 0, 0, &pSIDAdmin)) {
-				MessageBox(hWnd, (LPCWSTR)GetLastError(), L"AllocateAndInitializeSid (Admin) error", MB_OK);
-				return -1;
-			}
-
-			ZeroMemory(&ea, EAS * sizeof(EXPLICIT_ACCESS));
-
-			//---------------------------------------------
-			// block access by certain user
-			//---------------------------------------------
-			ea[0].grfAccessPermissions = GENERIC_READ;
-			ea[0].grfAccessMode = SET_ACCESS;
-			ea[0].grfInheritance = NO_INHERITANCE;
-			ea[0].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-			ea[0].Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
-			ea[0].Trustee.ptstrName = (LPTSTR)pSIDEveryone;
-
-			ea[1].grfAccessPermissions = GENERIC_ALL;
-			ea[1].grfAccessMode = SET_ACCESS;
-			ea[1].grfInheritance = NO_INHERITANCE;
-			ea[1].Trustee.TrusteeForm = TRUSTEE_IS_SID;
-			ea[1].Trustee.TrusteeType = TRUSTEE_IS_GROUP;
-			ea[1].Trustee.ptstrName = (LPTSTR)pSIDAdmin;
-
-			// Creates a new ACL that merges the new ACE into the existing DACL.
-			dwRes = SetEntriesInAcl(EAS, ea, NULL, &pDACL);
-
-			//  Verify
-			if (dwRes != ERROR_SUCCESS) {
-				MessageBox(hWnd, (LPCWSTR)dwRes, L"SetEntriesInAcl failed", MB_OK);
-				Cleanup(pSIDAdmin, pSIDEveryone, pSD, pDACL);
-				return -1;
-			}
-
-			// Attach the new ACL as the object's DACL.
-			dwRes = SetNamedSecurityInfo((LPWSTR)pszObjName, SE_FILE_OBJECT,
-				DACL_SECURITY_INFORMATION, NULL, NULL, pDACL, NULL);
-
-			if (dwRes == ERROR_SUCCESS) {
-				MessageBox(hWnd, L"Successfully changed DACL", L"Info", MB_OK);
-				Cleanup(pSIDAdmin, pSIDEveryone, pSD, pDACL);
-				return 0;
-			}
-			if (dwRes != ERROR_ACCESS_DENIED) {
-				MessageBox(hWnd, L"Chosen file is absent", L"Error", MB_OK);
-				Cleanup(pSIDAdmin, pSIDEveryone, pSD, pDACL);
-				return -1;
-			}
+		case ID_RUN_BTN: {
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_MAIN_MENU), hWnd, Attributor);
 			break;
 		}
-		case ID_TRUSTEE_BUTTON: {
-			//DWORD SECURITY_INFORMATION = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION;
-			//// Get a pointer to the existing DACL.
-			//dwRes = GetNamedSecurityInfo(pszObjName, SE_FILE_OBJECT,
-			//	SECURITY_INFORMATION, NULL, NULL, NULL, NULL, &pSD);
-
-			//// Verify
-
-			//----------------------//
-			//why is it not working?//
-			//----------------------//
-			/*LPLOCALGROUP_USERS_INFO_0 pBuf = NULL;
-			DWORD dwLevel = 0;
-			DWORD dwFlags = LG_INCLUDE_INDIRECT;
-			DWORD dwPrefMaxLen = MAX_PREFERRED_LENGTH;
-			DWORD dwEntriesRead = 0;
-			DWORD dwTotalEntries = 0;
-			NET_API_STATUS nStatus;*/
-
-			char *machineGuid = GetMachineGuid();
-
-			//if (dwRes != ERROR_SUCCESS)
-			//{
-			//	MessageBox(hWnd, (LPCWSTR)dwRes, L"GetNamedSecurityInfo failed", MB_OK);
-			//	Cleanup(pSIDAdmin, pSIDEveryone, pSD, pDACL);
-			//	return -1;
-			//}
-
-			//// Initialize an EXPLICIT_ACCESS structure for the new ACE.
-			//// For more entries, declare an array of the EXPLICIT_ACCESS structure
-			//SecureZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
-
-			//-------------------------------------------------------------------------------------------------------------------
-
-
-
-			// result gotta be something like 7fef1237-4ade-41c0-bf14-cf5b1d4bfad8
-
-			MessageBox(hWnd, L"Trustee worked perfectly", L"Info", MB_OK);
-
+		case ID_MORE_HELP: {
+			DialogBox(hInst, MAKEINTRESOURCE(ID_HELPBOX), hWnd, Help);
 			break;
 		}
-		case IDM_ABOUT: {
+		case ID_ABOUT_BTN: {
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
 			break;
 		}
@@ -424,6 +235,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
+		HDC hdcMem = CreateCompatibleDC(hdc); // hDC is a DC structure supplied by Win32API
+
+		SelectObject(hdcMem, hImage);
+		StretchBlt(
+			hdc,         // destination DC
+			0,        // x upper left
+			0,         // y upper left
+			400,       // destination width
+			250,      // destination height
+			hdcMem,      // you just created this above
+			0,
+			0,          // x and y upper left
+			400,          // source bitmap width
+			250,          // source bitmap height
+			SRCCOPY);   // raster operation
+
 		// TODO: Add any drawing code that uses hdc here...
 		EndPaint(hWnd, &ps);
 		break;
@@ -439,22 +266,271 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-// Message handler for about box.
+//
+//  FUNCTION: Attributor(HWND, UINT, WPARAM, LPARAM)
+//
+//  PURPOSE: allows us to play around with file access attributes.
+//
+//	WM_INITDIALOG	- adds values in ComboBox and sets default file
+//  WM_COMMAND		- process the messages
+//  WM_DESTROY		- post a quit message and return
+//
+//
+INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) {
+	HWND fNameEdit = GetDlgItem(hDlg, ID_FNAME_EDIT);
+	HWND accessCB = GetDlgItem(hDlg, ID_ACCESS_COMBO_BOX);
+
+	const DWORD MaxLength = 0x7fff;
+	static TCHAR name[256] = L"";
+	static OPENFILENAME file;
+	static HANDLE hFile;
+	static char text[MaxLength];
+	static DWORD nCharRead;
+
+	file.lStructSize = sizeof(OPENFILENAME);
+	file.hInstance = hInst;
+	file.lpstrFilter = L"Binary files (.exe)\0*.exe";
+	file.lpstrFile = name;
+	file.nMaxFile = 256;
+	file.lpstrInitialDir = L"..\\files";
+	file.lpstrDefExt = L"exe";
+
+	UNREFERENCED_PARAMETER(lParam);
+	switch (message)
+	{
+	case WM_INITDIALOG: {
+		// Adding values to ComboBox
+		SendMessage(accessCB, CB_ADDSTRING, NULL, (LPARAM)L"Set Access");
+		SendMessage(accessCB, CB_ADDSTRING, NULL, (LPARAM)L"Grant Access");
+		SendMessage(accessCB, CB_ADDSTRING, NULL, (LPARAM)L"Deny Access");
+		SendMessage(accessCB, CB_ADDSTRING, NULL, (LPARAM)L"Revoke Access");
+
+		//SendMessage(accessCB, CB_SETITEMHEIGHT, 1, 15);
+		//SendMessage(accessCB, CB_SELECTSTRING, 0, NULL);
+
+		SetWindowText(fNameEdit, L"D:\\study\\system_programming\\MainApp\\files\\4gb_patch.exe");
+		break;
+	}
+	case WM_COMMAND: {
+
+		int wmId = LOWORD(wParam);
+
+		switch (wmId)
+		{
+		case ID_MAIN_RUN_BTN: {
+			int filename_length = GetWindowTextLength(fNameEdit);
+			char *filename = new char[filename_length];
+
+			GetWindowTextA(fNameEdit, filename, filename_length+1);
+
+			if (strcmp(filename, "") == 0) {
+				//MessageBox(hWnd, L"You have to choose the file first", L"Error", MB_OK);
+				return -1;
+			}
+
+			// Defines the access mode
+			const int access_mode_length = GetWindowTextLength(accessCB);
+			char *access_mode_choice = new char[access_mode_length];
+
+			GetWindowTextA(accessCB, access_mode_choice, access_mode_length+1);
+			ACCESS_MODE access_mode;
+
+			if (strcmp(access_mode_choice, "Set Access") == 0) {
+				access_mode = SET_ACCESS;
+			}
+			else if (strcmp(access_mode_choice, "Grant Access") == 0) {
+				access_mode = GRANT_ACCESS;
+			}
+			else if (strcmp(access_mode_choice, "Deny Access") == 0) {
+				access_mode = DENY_ACCESS;
+			}
+			else if (strcmp(access_mode_choice, "Revoke Access") == 0) {
+				access_mode = REVOKE_ACCESS;
+			}
+			else {
+				//MessageBox(hDlg, L"You have to choose access permission", L"Error", MB_OK);
+				return -1;
+			}
+
+			// Defines the file permission
+			DWORD file_permission = 0;
+
+			if (SendDlgItemMessage(hDlg, ID_FILE_PERMISSION_READ, BM_GETCHECK, NULL, NULL)) {
+				file_permission |= GENERIC_READ;
+			}
+			if (SendDlgItemMessage(hDlg, ID_FILE_PERMISSION_WRITE, BM_GETCHECK, NULL, NULL)) {
+				file_permission |= GENERIC_WRITE;
+			}
+			if (SendDlgItemMessage(hDlg, ID_FILE_PERMISSION_EXECUTE, BM_GETCHECK, NULL, NULL)) {
+				file_permission |= GENERIC_EXECUTE;
+			}
+			if (SendDlgItemMessage(hDlg, ID_FILE_PERMISSION_ALL, BM_GETCHECK, NULL, NULL)) {
+				file_permission = GENERIC_ALL;
+			}
+			if (file_permission == 0) {
+				// MessageBox(hDlg, L"You have to choose at least one permission", L"Error", MB_OK);
+				return -1;
+			}
+
+
+			DWORD dwRes = 0;
+			EXPLICIT_ACCESS ea;
+
+			// Existing and new DACL pointers...
+			PACL pDACL = NULL;
+
+			// Reserving memory for security ID's
+			PSID pSIDEveryone = NULL;
+
+			// Security descriptor
+			PSECURITY_DESCRIPTOR pSD = NULL;
+			SecureZeroMemory(&pSD, sizeof(PSECURITY_DESCRIPTOR));
+
+			SID_IDENTIFIER_AUTHORITY SIDAuthWorld = SECURITY_WORLD_SID_AUTHORITY;
+			SID_IDENTIFIER_AUTHORITY SIDAuthNT = SECURITY_NT_AUTHORITY;
+
+			// Specify the DACL to use
+			// Create a SID for the Everyone group
+			if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
+				0, 0, 0, 0, 0, 0, 0, &pSIDEveryone)) {
+				// MessageBox(hDlg, (LPCWSTR)GetLastError(), L"AllocateAndInitializeSid (Everyone) error", MB_OK);
+				Cleanup(pSIDEveryone, pSD, pDACL);
+				return -1;
+			}
+
+			ZeroMemory(&ea, sizeof(EXPLICIT_ACCESS));
+
+			//---------------------------------------------
+			// block access by certain user
+			//---------------------------------------------
+			ea.grfAccessPermissions = file_permission;
+			ea.grfAccessMode = access_mode;
+			ea.grfInheritance = NO_INHERITANCE;
+			ea.Trustee.TrusteeForm = TRUSTEE_IS_SID;
+			ea.Trustee.TrusteeType = TRUSTEE_IS_WELL_KNOWN_GROUP;
+			ea.Trustee.ptstrName = (LPTSTR)pSIDEveryone;
+
+			// Creates a new ACL that merges the new ACE into the existing DACL.
+			dwRes = SetEntriesInAcl(1, &ea, NULL, &pDACL);
+
+			//  Verify
+			if (dwRes != ERROR_SUCCESS) {
+				// MessageBox(hDlg, (LPCWSTR)dwRes, L"SetEntriesInAcl failed", MB_OK);
+				Cleanup(pSIDEveryone, pSD, pDACL);
+				return -1;
+			}
+			
+			wchar_t *filename_buf = new wchar_t[filename_length];
+			mbstowcs(filename_buf, filename, filename_length+1); // converts char* into wchar_t*
+
+			// Attach the new ACL as the object's DACL.
+			dwRes = SetNamedSecurityInfo((LPWSTR)filename_buf, SE_FILE_OBJECT,
+				DACL_SECURITY_INFORMATION, NULL, NULL, pDACL, NULL);
+
+			if (dwRes == ERROR_ACCESS_DENIED) {
+				// MessageBox(hDlg, L"Chosen file is absent", L"Error", MB_OK);
+				Cleanup(pSIDEveryone, pSD, pDACL);
+				return -1;
+			}
+
+			if (dwRes == ERROR_SUCCESS) {
+				// MessageBox(hDlg, L"Successfully changed DACL", L"Info", MB_OK);
+				Cleanup(pSIDEveryone, pSD, pDACL);
+				return 0;
+			}
+
+			break;
+		}
+		case ID_F_SELECT_BTN: {
+			file.lpstrTitle = L"Choose file to open";
+
+			if (!GetOpenFileName(&file)) {
+				// MessageBox(hDlg, L"Something went wrong", L"Error", MB_OK | MB_ICONERROR);
+				return -1;
+			}
+
+			SetWindowText(fNameEdit, file.lpstrFile);
+
+			break;
+		}
+		}
+		break;
+	}
+	case WM_DESTROY: {
+		EndDialog(hDlg, LOWORD(wParam));
+		break;
+	}
+	default: {
+		return DefWindowProc(hDlg, message, wParam, lParam);
+	}
+	}
+	return 0;
+}
+
+//
+//  FUNCTION: About(HWND, UINT, WPARAM, LPARAM)
+//
+//  PURPOSE: displays About dialog
+//
+//  WM_COMMAND		- process the messages
+//
+//
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
     {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
-
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        break;
+	case WM_COMMAND: {
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
+		{
+			EndDialog(hDlg, LOWORD(wParam));
+			return (INT_PTR)TRUE;
+		}
+		break;
+	}
     }
     return (INT_PTR)FALSE;
+}
+
+//
+//  FUNCTION: Help(HWND, UINT, WPARAM, LPARAM)
+//
+//  PURPOSE: displays Help dialog with the information about how to use the application
+//
+//  WM_COMMAND		- process the messages
+//  WM_DESTROY		- post a quit message and return
+//
+//
+INT_PTR CALLBACK Help(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_COMMAND: {
+		int wmId = LOWORD(wParam);
+
+		switch (wmId)
+		{
+		case IDC_BUTTON1: {
+			MessageBox(hDlg, L"Wow", L"It works", MB_OK);
+			break;
+		}
+		case IDM_EXIT: {
+			DestroyWindow(hDlg);
+			break;
+		}
+		default: {
+			return DefWindowProc(hDlg, message, wParam, lParam);
+		}
+		}
+		break;
+	}
+	case WM_DESTROY: {
+		EndDialog(hDlg, LOWORD(wParam));
+		break;
+	}
+	default: {
+		return DefWindowProc(hDlg, message, wParam, lParam);
+	}
+	}
+	return 0;
 }
