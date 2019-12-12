@@ -210,8 +210,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				if (OpenClipboard(wnd)) {
 					if (EmptyClipboard()) {
 						UINT jora = RegisterClipboardFormatA("JORA");
-						HANDLE hData = GetClipboardData(jora);
-						DWORD grove = 25;
++						DWORD grove = 25;
 						HGLOBAL hGl = GlobalAlloc(GMEM_DDESHARE, sizeof(grove));
 						memcpy(hGl, &grove, sizeof(grove));
 						SetClipboardData(jora, hGl);
