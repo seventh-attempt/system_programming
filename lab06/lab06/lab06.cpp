@@ -24,8 +24,8 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-string getDump(WCHAR*);
-string hex(BYTE);
+string GetDump(WCHAR*);
+string ToHex(BYTE);
 
 BOOL LaunchTicTac();
 BOOL LaunchNightSky();
@@ -36,6 +36,11 @@ HWND h16Static;
 HWND h4Edit;
 HWND h8Edit;
 HWND h16Edit;
+HWND hWowEdit;
+
+HBITMAP hBmp1;
+HBITMAP hBmp2;
+HBITMAP hBmp3;
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -126,11 +131,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    h4Static = CreateWindow(L"STATIC", L"8 bits", staticStyle, 540, 0, 40, 20, hWnd, NULL, hInst, NULL);
    h4Static = CreateWindow(L"STATIC", L"16 bits", staticStyle, 910, 0, 45, 20, hWnd, NULL, hInst, NULL);
 
-   h4Edit = CreateWindow(L"edit", NULL, editStyle, 10, 25, 360, 500, hWnd, (HMENU)EDIT_4_ID, hInst, NULL);
-   h8Edit = CreateWindow(L"edit", NULL, editStyle, 380, 25, 360, 500, hWnd, (HMENU)EDIT_8_ID, hInst, NULL);
-   h16Edit = CreateWindow(L"edit", NULL, editStyle, 750, 25, 360, 500, hWnd, (HMENU)EDIT_16_ID, hInst, NULL);
-
-   //CreateWindowEx(0, L"SCROLLBAR", (PTSTR)NULL, WS_CHILD | WS_VISIBLE | SBS_VERT, 330, 0, 20, 500, h8Edit, NULL, hInst, NULL);
+   h4Edit = CreateWindow(L"edit", NULL, editStyle, 10, 35, 360, 490, hWnd, (HMENU)EDIT_4_ID, hInst, NULL);
+   h8Edit = CreateWindow(L"edit", NULL, editStyle, 380, 35, 360, 490, hWnd, (HMENU)EDIT_8_ID, hInst, NULL);
+   h16Edit = CreateWindow(L"edit", NULL, editStyle, 750, 35, 360, 490, hWnd, (HMENU)EDIT_16_ID, hInst, NULL);
 
    if (!hWnd)
    {
@@ -157,51 +160,76 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-			case ID_IMAGES_DUMP: {
-				SetDlgItemTextA(hWnd, EDIT_4_ID, getDump((WCHAR*)L"D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_16_4.bmp").c_str());
-				SetDlgItemTextA(hWnd, EDIT_8_ID, getDump((WCHAR*)L"D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_32_8.bmp").c_str());
-				SetDlgItemTextA(hWnd, EDIT_16_ID, getDump((WCHAR*)L"D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_12_16.bmp").c_str());
+	case WM_CREATE: {
+		hBmp1 = (HBITMAP)LoadImageA(NULL, "D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_16_4.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		hBmp2 = (HBITMAP)LoadImageA(NULL, "D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_32_8.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+		hBmp3 = (HBITMAP)LoadImageA(NULL, "D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_12_16.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
-				break;
-			}
-			case ID_GRAPHICS_TICTACTOE: {
-				if (!LaunchTicTac()) {
-					MessageBox(NULL, L"Something went wrong with launching 'TicTacToe'", L"Error", MB_OK);
-				}
-				
-				break;
-			}
-			case ID_GRAPHICS_NIGHTSKY: {
-				if (!LaunchNightSky()) {
-					MessageBox(NULL, L"Something went wrong with launching 'Night Sky'", L"Error", MB_OK);
-				}
+		break;
+	}
+	case WM_COMMAND: {
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
+		{
+		case ID_IMAGES_DUMP: {
+			SetDlgItemTextA(hWnd, EDIT_4_ID, GetDump((WCHAR*)L"D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_16_4.bmp").c_str());
+			SetDlgItemTextA(hWnd, EDIT_8_ID, GetDump((WCHAR*)L"D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_32_8.bmp").c_str());
+			SetDlgItemTextA(hWnd, EDIT_16_ID, GetDump((WCHAR*)L"D:\\study\\system_programming\\lab06\\lab06\\images\\bmp_12_16.bmp").c_str());
 
-				break;
+			break;
+		}
+		case ID_GRAPHICS_TICTACTOE: {
+			if (!LaunchTicTac()) {
+				MessageBox(NULL, L"Something went wrong with launching 'TicTacToe'", L"Error", MB_OK);
 			}
-			case IDM_ABOUT: {
-				DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-				break;
+
+			break;
+		}
+		case ID_GRAPHICS_NIGHTSKY: {
+			if (!LaunchNightSky()) {
+				MessageBox(NULL, L"Something went wrong with launching 'Night Sky'", L"Error", MB_OK);
 			}
-			case IDM_EXIT: {
-				DestroyWindow(hWnd);
-				break;
-			}
-			default: {
-				return DefWindowProc(hWnd, message, wParam, lParam);
-			}
-            }
-        }
-        break;
+
+			break;
+		}
+		case IDM_ABOUT: {
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		}
+		case IDM_EXIT: {
+			DestroyWindow(hWnd);
+			break;
+		}
+		default: {
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+		}
+		break;
+	}
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
-		// TODO: Add any drawing code that uses hdc here...
+		BITMAP bm;
+		HDC hMemDc = CreateCompatibleDC(hdc);
+
+		SelectObject(hMemDc, hBmp1);
+
+		GetObject(hBmp1, sizeof(bm), &bm);
+		BitBlt(hdc, 30, 0, bm.bmWidth, bm.bmHeight, hMemDc, 0, 0, SRCCOPY);
+
+		SelectObject(hMemDc, hBmp2);
+		
+		GetObject(hBmp2, sizeof(bm), &bm);
+		BitBlt(hdc, 400, 0, bm.bmWidth, bm.bmHeight, hMemDc, 0, 0, SRCCOPY);
+		
+		SelectObject(hMemDc, hBmp3);
+		
+		GetObject(hBmp3, sizeof(bm), &bm);
+		BitBlt(hdc, 770, 0, bm.bmWidth, bm.bmHeight, hMemDc, 0, 0, SRCINVERT);
+
+		DeleteDC(hMemDc);
+
 		EndPaint(hWnd, &ps);
 		break;
 	}
@@ -247,7 +275,7 @@ BOOL LaunchNightSky() {
 	return TRUE;
 }
 
-string getDump(WCHAR* path) {
+string GetDump(WCHAR* path) {
 
 	stringstream stream;
 	tagBITMAPFILEHEADER bmpFileHeader = { 0 };
@@ -307,7 +335,7 @@ string getDump(WCHAR* path) {
 			stream << "\r\n  ";
 		}
 		if (ReadByte != 0) {
-			stream << hex(value).c_str() << " ";
+			stream << ToHex(value).c_str() << " ";
 		}
 
 		i++;
@@ -315,7 +343,7 @@ string getDump(WCHAR* path) {
 
 	return stream.str();
 }
-string hex(BYTE value) {
+string ToHex(BYTE value) {
 	string result;
 	stringstream stream;
 
