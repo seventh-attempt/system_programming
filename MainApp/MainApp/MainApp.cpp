@@ -29,7 +29,7 @@ INT_PTR CALLBACK	Help(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK	Attributor(HWND, UINT, WPARAM, LPARAM);
 
 HWND hWnd;
-HBITMAP hImage;
+HBITMAP hBmp;
 
 void Cleanup(PSID pSIDEveryone, PSECURITY_DESCRIPTOR pSD, PACL pNewDACL);
 
@@ -116,7 +116,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    DWORD txtStyle = WS_CHILD | WS_VISIBLE;
 
    int wndWidth = 400;
-   int wndHeight = 500;
+   int wndHeight = 450;
    int btnWidth = 100;
    int btnHeight = 30;
 
@@ -125,23 +125,18 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 
    HWND bgsStatic = CreateWindow(L"STATIC", NULL, txtStyle,
-	   0, 0, wndWidth, wndHeight, hWnd, NULL, hInstance, NULL);
-
-   /*HANDLE hImage = LoadImage(NULL, L"D:\\study\\system_programming\\MainApp\\files\\lock.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-   SendMessage(hWnd, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM)hImage);*/
-
-   hImage = (HBITMAP)LoadImage(NULL, L"D:\\study\\system_programming\\MainApp\\files\\lock.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE | LR_LOADTRANSPARENT);
+	   0, 240, wndWidth, wndHeight, hWnd, NULL, hInstance, NULL);
 
    HWND madeByStatic = CreateWindow(L"STATIC", L"Made by", txtStyle,
-	   220, 280, 100, 20, hWnd, NULL, hInstance, NULL);
+	   220, 250, 100, 20, hWnd, NULL, hInstance, NULL);
    HWND nameStatic = CreateWindow(L"STATIC", L"Khramkov Dmitry", txtStyle,
-	   250, 300, 150, 20, hWnd, NULL, hInstance, NULL);
+	   250, 270, 150, 20, hWnd, NULL, hInstance, NULL);
    HWND groupStatic = CreateWindow(L"STATIC", L"gr. 10702217", txtStyle,
-	   250, 320, 150, 20, hWnd, NULL, hInstance, NULL);
+	   250, 290, 150, 20, hWnd, NULL, hInstance, NULL);
 
-   HWND startBtn = CreateWindow(L"button", L"Run", btnStyle, wndWidth-btnWidth-40, wndHeight-btnHeight-80, btnWidth, btnHeight,
+   HWND startBtn = CreateWindow(L"button", L"Run", btnStyle, 260, 340, btnWidth, btnHeight,
 	   hWnd, (HMENU)ID_RUN_BTN, hInstance, NULL);
-   HWND aboutBtn = CreateWindow(L"Button", L"About", btnStyle, 25, wndHeight-btnHeight-80, btnWidth, btnHeight,
+   HWND aboutBtn = CreateWindow(L"Button", L"About", btnStyle, 25, 340, btnWidth, btnHeight,
 	   hWnd, (HMENU)ID_ABOUT_BTN, hInstance, NULL);
 
    if (!hWnd)
@@ -171,12 +166,6 @@ void Cleanup(PSID pSIDEveryone, PSECURITY_DESCRIPTOR pSD, PACL pNewDACL) {
 	if (pNewDACL) {
 		LocalFree((HLOCAL)pNewDACL);
 	}
-	//if (filename) {
-	//	delete[] filename;
-	//}
-	//if (file_access_choice) {
-	//	delete[] file_access_choice;
-	//}
 }
 
 //
@@ -193,14 +182,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	switch (message)
 	{
-	// Here we checking if the application is runned at specific machine by its GUID
 	case WM_CREATE: {
-		char *machineGUID = GetMachineGuid();
-
-		if (strcmp(machineGUID, "7fef1237-4ade-41c0-bf14-cf5b1d4bfad8") != 0) {
+		// Here we are checking if the application is runned at specific machine by its GUID
+		if (!IsCorrectMachineGuid()) {
 			MessageBox(hWnd, L"This software doesn't belong to you", L"Error", MB_OK);
 			return -1;
 		}
+
+		hBmp = (HBITMAP)LoadImageA(NULL, "D:\\study\\system_programming\\MainApp\\files\\lock.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 
 		break;
 	}
@@ -211,7 +200,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		switch (wmId)
 		{
 		case ID_RUN_BTN: {
+			hBmp = (HBITMAP)LoadImageA(NULL, "D:\\study\\system_programming\\MainApp\\files\\lock_filled.bmp", IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 			DialogBox(hInst, MAKEINTRESOURCE(IDD_MAIN_MENU), hWnd, Attributor);
+			InvalidateRect(hWnd, NULL, FALSE);
+
 			break;
 		}
 		case ID_MORE_HELP: {
@@ -230,26 +222,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			return DefWindowProc(hWnd, message, wParam, lParam);
 		}
 		}
+
 		break;
 	}
 	case WM_PAINT: {
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(hWnd, &ps);
-		HDC hdcMem = CreateCompatibleDC(hdc); // hDC is a DC structure supplied by Win32API
+		
+		BITMAP bm;
+		HDC hMemDc = CreateCompatibleDC(hdc);
 
-		SelectObject(hdcMem, hImage);
-		StretchBlt(
-			hdc,         // destination DC
-			0,        // x upper left
-			0,         // y upper left
-			400,       // destination width
-			250,      // destination height
-			hdcMem,      // you just created this above
-			0,
-			0,          // x and y upper left
-			400,          // source bitmap width
-			250,          // source bitmap height
-			SRCCOPY);   // raster operation
+		SelectObject(hMemDc, hBmp);
+
+		GetObject(hBmp, sizeof(bm), &bm);
+		BitBlt(hdc, 0, 0, bm.bmWidth, bm.bmHeight, hMemDc, 0, 0, SRCCOPY);
+
+		DeleteDC(hMemDc);
 
 		// TODO: Add any drawing code that uses hdc here...
 		EndPaint(hWnd, &ps);
@@ -289,11 +277,9 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 
 	file.lStructSize = sizeof(OPENFILENAME);
 	file.hInstance = hInst;
-	file.lpstrFilter = L"Binary files (.exe)\0*.exe";
 	file.lpstrFile = name;
 	file.nMaxFile = 256;
 	file.lpstrInitialDir = L"..\\files";
-	file.lpstrDefExt = L"exe";
 
 	UNREFERENCED_PARAMETER(lParam);
 	switch (message)
@@ -305,10 +291,6 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 		SendMessage(accessCB, CB_ADDSTRING, NULL, (LPARAM)L"Deny Access");
 		SendMessage(accessCB, CB_ADDSTRING, NULL, (LPARAM)L"Revoke Access");
 
-		//SendMessage(accessCB, CB_SETITEMHEIGHT, 1, 15);
-		//SendMessage(accessCB, CB_SELECTSTRING, 0, NULL);
-
-		SetWindowText(fNameEdit, L"D:\\study\\system_programming\\MainApp\\files\\4gb_patch.exe");
 		break;
 	}
 	case WM_COMMAND: {
@@ -324,7 +306,7 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			GetWindowTextA(fNameEdit, filename, filename_length+1);
 
 			if (strcmp(filename, "") == 0) {
-				//MessageBox(hWnd, L"You have to choose the file first", L"Error", MB_OK);
+				MessageBox(hWnd, L"You have to choose the file first", L"Error", MB_OK);
 				return -1;
 			}
 
@@ -348,7 +330,7 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 				access_mode = REVOKE_ACCESS;
 			}
 			else {
-				//MessageBox(hDlg, L"You have to choose access permission", L"Error", MB_OK);
+				MessageBox(hDlg, L"You have to choose access permission", L"Error", MB_OK);
 				return -1;
 			}
 
@@ -368,7 +350,7 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 				file_permission = GENERIC_ALL;
 			}
 			if (file_permission == 0) {
-				// MessageBox(hDlg, L"You have to choose at least one permission", L"Error", MB_OK);
+				MessageBox(hDlg, L"You have to choose at least one permission", L"Error", MB_OK);
 				return -1;
 			}
 
@@ -393,7 +375,7 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			// Create a SID for the Everyone group
 			if (!AllocateAndInitializeSid(&SIDAuthWorld, 1, SECURITY_WORLD_RID,
 				0, 0, 0, 0, 0, 0, 0, &pSIDEveryone)) {
-				// MessageBox(hDlg, (LPCWSTR)GetLastError(), L"AllocateAndInitializeSid (Everyone) error", MB_OK);
+				MessageBox(hDlg, (LPCWSTR)GetLastError(), L"AllocateAndInitializeSid (Everyone) error", MB_OK);
 				Cleanup(pSIDEveryone, pSD, pDACL);
 				return -1;
 			}
@@ -415,7 +397,7 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 
 			//  Verify
 			if (dwRes != ERROR_SUCCESS) {
-				// MessageBox(hDlg, (LPCWSTR)dwRes, L"SetEntriesInAcl failed", MB_OK);
+				MessageBox(hDlg, (LPCWSTR)dwRes, L"SetEntriesInAcl failed", MB_OK);
 				Cleanup(pSIDEveryone, pSD, pDACL);
 				return -1;
 			}
@@ -428,13 +410,13 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 				DACL_SECURITY_INFORMATION, NULL, NULL, pDACL, NULL);
 
 			if (dwRes == ERROR_ACCESS_DENIED) {
-				// MessageBox(hDlg, L"Chosen file is absent", L"Error", MB_OK);
+				MessageBox(hDlg, L"You don't have the permissions to change the file", L"Error", MB_OK);
 				Cleanup(pSIDEveryone, pSD, pDACL);
 				return -1;
 			}
 
 			if (dwRes == ERROR_SUCCESS) {
-				// MessageBox(hDlg, L"Successfully changed DACL", L"Info", MB_OK);
+				MessageBox(hDlg, L"Successfully changed DACL", L"Info", MB_OK);
 				Cleanup(pSIDEveryone, pSD, pDACL);
 				return 0;
 			}
@@ -445,7 +427,7 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 			file.lpstrTitle = L"Choose file to open";
 
 			if (!GetOpenFileName(&file)) {
-				// MessageBox(hDlg, L"Something went wrong", L"Error", MB_OK | MB_ICONERROR);
+				MessageBox(hDlg, L"Something went wrong", L"Error", MB_OK | MB_ICONERROR);
 				return -1;
 			}
 
@@ -456,12 +438,9 @@ INT_PTR CALLBACK Attributor(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
 		}
 		break;
 	}
-	case WM_DESTROY: {
+	case WM_CLOSE: {
 		EndDialog(hDlg, LOWORD(wParam));
 		break;
-	}
-	default: {
-		return DefWindowProc(hDlg, message, wParam, lParam);
 	}
 	}
 	return 0;
@@ -506,30 +485,11 @@ INT_PTR CALLBACK Help(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	switch (message)
 	{
 	case WM_COMMAND: {
-		int wmId = LOWORD(wParam);
-
-		switch (wmId)
-		{
-		case IDC_BUTTON1: {
-			MessageBox(hDlg, L"Wow", L"It works", MB_OK);
-			break;
-		}
-		case IDM_EXIT: {
-			DestroyWindow(hDlg);
-			break;
-		}
-		default: {
-			return DefWindowProc(hDlg, message, wParam, lParam);
-		}
-		}
 		break;
 	}
-	case WM_DESTROY: {
+	case WM_CLOSE: {
 		EndDialog(hDlg, LOWORD(wParam));
 		break;
-	}
-	default: {
-		return DefWindowProc(hDlg, message, wParam, lParam);
 	}
 	}
 	return 0;
